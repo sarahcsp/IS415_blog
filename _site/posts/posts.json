@@ -1,0 +1,19 @@
+[
+  {
+    "path": "posts/welcome/",
+    "title": "Welcome to IS415 blog",
+    "description": "Welcome to our new blog, IS415 blog. We hope you enjoy \nreading what we have to say!",
+    "author": [
+      {
+        "name": "Sarah Chin",
+        "url": "linkedin.com/in/sarahchin99/"
+      }
+    ],
+    "date": "2021-08-23",
+    "categories": [],
+    "contents": "\r\n\r\n\r\n\r\n",
+    "preview": {},
+    "last_modified": "2021-08-23T09:42:57+08:00",
+    "input_file": "welcome.knit.md"
+  }
+]
