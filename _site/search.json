@@ -6,14 +6,14 @@
       "description": "Some additional details about the blog",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-08-23T11:33:08+08:00"
+      "last_modified": "2021-09-05T11:52:27+08:00"
     },
     {
       "path": "index.html",
       "title": "IS415 blog",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-08-23T11:33:13+08:00"
+      "last_modified": "2021-09-05T11:52:35+08:00"
     }
   ],
   "collections": ["posts/posts.json"]

@@ -1,5 +1,22 @@
 [
   {
+    "path": "posts/2021-08-30-in-class-exercise-3/",
+    "title": "In-Class Exercise 3",
+    "description": "In this hands-on exercise, we learnt to create and plot the Choropleth map and the different codes that can be used to customize our maps.",
+    "author": [
+      {
+        "name": "Sarah Chin",
+        "url": "linkedin.com/in/sarahchin99/"
+      }
+    ],
+    "date": "2021-08-30",
+    "categories": [],
+    "contents": "\r\nBoxplot\r\nBefore learning about Choropleth map and how to code it, we started off with the Boxplot.\r\nBoxplot is one one the popular Exploratory Data Analysis (EDA) technique used to show the statistics and distribution of data values.\r\n\r\n\r\n\r\n",
+    "preview": {},
+    "last_modified": "2021-08-30T15:57:24+08:00",
+    "input_file": "in-class-exercise-3.knit.md"
+  },
+  {
     "path": "posts/2021-08-23-in-class-exercise-2/",
     "title": "In-class Exercise 2",
     "description": "In this hands-on exercise, I learn how to handle geospatial data in R by using sf package.",

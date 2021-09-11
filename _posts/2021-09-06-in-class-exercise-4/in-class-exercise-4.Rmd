@@ -1,0 +1,157 @@
+---
+title: "In-class Exercise 4"
+description: |
+  In this in-class exercise, we learn about OneMap API and how to use and analyse the data. 
+author:
+  - name: Sarah Chin
+    url: linkedin.com/in/sarahchin99/
+date: 09-06-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+Before we do anything, we need to download the OneMap API. 
+
+``` {r echo=TRUE, eval=FALSE}
+library(onemapsgapi)
+```
+
+In order to use OneMap, we need to generate a token.
+
+``` {r echo=TRUE, eval=FALSE}
+token <- get_token("user@example.com", "password")
+```
+
+Remember to install and load the R packages. 
+
+``` {r echo=TRUE, eval=FALSE}
+packages = c('maptools', 'sf', 'raster','spatstat', 'tmap', 'tidyverse')
+for (p in packages){
+if(!require(p, character.only = T)){
+install.packages(p)
+}
+library(p,character.only = T)
+}
+```
+
+# Step 1: Importing Geospatial Data
+
+Let's first import the CoastalOutline and Subzone shapefiles. 
+
+``` {r echo=TRUE, eval=FALSE}
+sg_sf <- st_read(dsn = "data/shapefile", 
+                 layer= "CostalOutline")
+mpsz_sf <- st_read(dsn = "data/shapefile", 
+                   layer= "MP14_SUBZONE_WEB_PL")
+```
+
+# Step 2: Importing Aspatial Data 
+
+Let's import the Childcare data next.
+
+``` {r echo=TRUE, eval=FALSE}
+childcare <- read_rds("data/rds/childcare.rds")
+CHAS <- read_rds("data/rds/CHAS.rds")
+```
+
+After importing all the necessary data, ensure that you check each dataset; make this a good habit to have!
+
+# Step 3: Converting aspatial to geospatial 
+
+Before converting, notice that CHAS is not in sf yet. Therefore, we must use the function: st_as_sf and change the geographic coordinates to 3414 (This is the standard for Singapore data).
+
+``` {r echo=TRUE, eval=FALSE}
+CHAS_sf <- st_as_sf(CHAS,
+                    coords = c("X_COORDINATE",
+                               "Y_COORDINATE"),
+                    crs = 3414)
+```
+
+We also need to set the coordinates and CRS for childcare dataset. 
+
+``` {r echo=TRUE, eval=FALSE}
+childcare$Lat <- as.numeric(childcare$Lat)
+childcare$Lng <- as.numeric(childcare$Lng)
+childcare_sf <- st_as_sf(childcare,
+                          coords = c("Lng",
+                                     "Lat"),
+                          crs = 4326) %>% # here is assigned as 4326 because the data was originally 4326 
+  # (if it has decimal points in the dataset, its most likely 4326)
+  st_transform(crs = 3414) # here is changing crs 4326 to crs 3414 because we want to keep it equal and 
+# within the Singapore geographic coordinate system
+```
+
+*Fun Fact:* 
+
+This function chains code lines together: 
+
+> %>%
+
+It helps the user perform multiple operations at one go! 
+
+
+To view the dataset, you can use this function: 
+
+``` {r echo=TRUE, eval=FALSE}
+view(childcare_sf)
+```
+
+If not, you could also double click on the dataset under Environment. 
+
+```{r, echo = FALSE, fig.align = 'center', out.width = '60%'} 
+knitr::include_graphics("environment.jpg")  
+```
+
+# Step 4: Geospatial Data Wrangling 
+
+### Converting from sf to Spatial class
+
+``` {r echo=TRUE, eval=FALSE}
+childcare_spatial <- as_Spatial(childcare_sf)
+CHAS_spatial <- as_Spatial(CHAS_sf)
+sg <- as_Spatial(sg_sf)
+```
+
+
+### Converting from Spatial class to sp format
+
+``` {r echo=TRUE, eval=FALSE}
+childcare_sp <- as(childcare_spatial, "SpatialPOints")
+CHAS_sp <- as(CHAS_spatial, "SpatialPoints")
+sg_sp <- as(sg, "SpatialPoints")
+```
+
+
+### Converting from sp to spatstat ppp format 
+
+``` {r echo=TRUE, eval=FALSE}
+childcare_ppp <- as(childcare_sp, "ppp")
+CHAS_ppp <- as(CHAS_sp, "ppp")
+sg_ppp <- as(sg_sp, "ppp")
+```
+
+# Step 5: Plotting the data
+
+``` {r echo=TRUE, eval=FALSE}
+tmap_mode('view')
+tm_shape(childcare_sf) +
+  tm_dots(alpha=0.4,
+          col="blue",
+          size=0.05) +
+tm_shape(CHAS_sf) +
+  tm_dots(alpha=0.4,
+          col="red",
+          size=0.05)
+```
+
+The more intense the colour of the data point, the more childcare centers there are in the area. 
+
+* Take note to not put too many interactive maps! It might cause your blog to overload.
+
+

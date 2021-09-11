@@ -1,0 +1,30 @@
+---
+title: "In-Class Exercise 3"
+description: |
+  In this hands-on exercise, we learnt to create and plot the Choropleth map and the different codes that can be used to customize our maps.  
+author:
+  - name: Sarah Chin
+    url: linkedin.com/in/sarahchin99/
+date: 08-30-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+
+
+## Boxplot
+
+Before learning about Choropleth map and how to code it, we started off with the Boxplot. 
+
+- Boxplot is one one the popular Exploratory Data Analysis (EDA) technique used to show the statistics and distribution of data values.
+
+''' {r}
+ggplot(data=mpszpop2020, 
+       aes(x = "", 
+           y = AGED)) +
+  geom_boxplot()
+'''
+```{.r .distill-force-highlighting-css}
+```
