@@ -1,0 +1,44 @@
+---
+title: "In Class Exercise 5"
+description: |
+  A short description of the post.
+author:
+  - name: Sarah Chin
+    url: linkedin.com/in/sarahchin99/
+date: 09-13-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Installing and Loading the R package
+
+maptools is for creating spatial objects
+sf is for importing geospatial data
+raster is for creating raster object
+spatstat is for performing spatial point pattern analysis
+tmap is for plotting thematic maps 
+tidyverse is for data handling 
+
+``` {r}
+packages <- c('maptools', 'sf', 'raster', 'spatstat', 'tmap', 'tidyverse')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+library(p, character.only = T)
+}
+```
+
+
+
+
+
+
+
+
