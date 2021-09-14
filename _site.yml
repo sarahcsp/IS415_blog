@@ -1,6 +1,5 @@
 name: "IS415_blog"
 title: "IS415 blog"
-theme: Before I Sleep.css
 description: |
   IS415 blog
 output_dir: "_site"

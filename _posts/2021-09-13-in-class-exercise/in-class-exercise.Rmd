@@ -168,7 +168,7 @@ Now we want to plot it in a graph. However, we cannot use _tmap_ like how we did
 Specifying which of the data we want to use.
 
 ``` {r echo=TRUE, eval=TRUE}
-pg <- mpsz[mpsz@data$PLN_AREA_N=="Punggol"]
+pg <- mpsz[mpsz@data$PLN_AREA_N=="PUNGGOL",]
 ```
 
 ### Converting SpatialPolygonDataFrame into SpatialPologons object
@@ -209,7 +209,7 @@ After the iterations are done, it should go through this chunk in order to get a
 ```{r echo=TRUE, eval=FALSE}
 title <- "Pairwise Distance: L function"
 
-Lcsr_df <- as.data.frame(L_CHAS.csr)
+Lcsr_df <- as.data.frame(L_childcare)
 
 colour=c("#0D657D","#ee770d","#D3D3D3")
 csr_plot <- ggplot(Lcsr_df, aes(r, obs-r))+
