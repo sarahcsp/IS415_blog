@@ -1,7 +1,7 @@
 ---
 title: "Take Home Exercise 2"
 description: |
-  A short description of the post.
+  Take Home Exercise 2: Focusing on Airbnb and how their expansion has impacted our economy. 
 author:
   - name: Sarah Chin
     url: linkedin.com/in/sarahchin99/
@@ -16,8 +16,6 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-Distill is a publication format for scientific and technical writing, native to the web.
 
-Learn more about using Distill at <https://rstudio.github.io/distill>.
 
 

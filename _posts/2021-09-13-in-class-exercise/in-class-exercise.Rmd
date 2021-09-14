@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = FALSE)
 + tmap is for plotting thematic maps 
 + tidyverse is for data handling 
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 packages <- c('maptools', 'sf', 'raster', 'spatstat', 'tmap', 'tidyverse', 'plotly', 'ggthemes')
 for(p in packages){
   if(!require(p, character.only = T)){
@@ -40,12 +40,11 @@ library(p, character.only = T)
 
 Importing shapefile using _st_read()_ of *sf* package. The output object is in tibble sf object class. 
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 mpsz_sf <- st_read(dsn = "data/shapefile",
                    layer = "MP14_SUBZONE_WEB_PL") # st_read is for geospatial data, not for excel 
 # for excel, we have readxl
 ```
-
 Projection is in SVY21. 
 
 
@@ -53,7 +52,7 @@ Projection is in SVY21.
 
 *read_rds()* of **readr** package is used instead of *readRDS()* of base R is used. This is because output of *read_RDS* is in tibble object. 
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 CHAS <- read_rds("data/rds/CHAS.rds")
 childcare <- read_rds("data/rds/childcare.rds")
 ```
@@ -65,7 +64,7 @@ Note that there are some data issue in childcare data frame because 'Lat' and 'L
 
 ## Converting the aspatial data frame into sf objects
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 CHAS_sf <- st_as_sf(CHAS,
                     coords = c("X_COORDINATE",
                                "Y_COORDINATE"), # can refer to the excel itself for the coords
@@ -74,7 +73,7 @@ CHAS_sf <- st_as_sf(CHAS,
 
 Note: *st_as_sf* accept coordinates in character data type. 
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 childcare_sf <- st_as_sf(childcare,
                     coords = c("Lng",
                                "Lat"), 
@@ -86,7 +85,7 @@ If you want to change the 'Lat' and 'Lng' in the original dataset to numeric dat
 
 # Plot map to review 
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 tmap_mode("view")
 tm_shape(childcare_sf) + 
   tm_dots(alpha = 0.4, # alpha sets the transparency
@@ -96,7 +95,7 @@ tm_shape(childcare_sf) +
 
 You can also view more than one data in a single map.
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 tmap_mode("view")
 tm_shape(childcare_sf) + 
   tm_dots(alpha = 0.4, 
@@ -114,7 +113,7 @@ tm_shape(CHAS_sf) +
 
 as_Spatial() of sf package. 
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 childcare <- as_Spatial(childcare_sf)
 CHAS <- as_Spatial(CHAS_sf)
 mpsz <- as_Spatial(mpsz_sf)
@@ -124,7 +123,7 @@ mpsz <- as_Spatial(mpsz_sf)
 
 as.SpatialPoint() of as.SpatialPolygon() of maptools package.
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 childcare_sp <- as(childcare, "SpatialPoints")
 CHAS_sp <- as(CHAS, "SpatialPoints")
 mpsz_sp <- as(mpsz, "SpatialPolygons")
@@ -138,7 +137,7 @@ Dropping all the projection information. All that would be left is the coordinat
 
 * Using as.ppp() of maptools package to do the conversion
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 childcare_ppp <- as(childcare_sp, "ppp") 
 CHAS_ppp <- as(CHAS_sp, "ppp")
 
@@ -146,7 +145,7 @@ CHAS_ppp <- as(CHAS_sp, "ppp")
 
 ### Removing duplicate points using jitter 
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 childcare_ppp_jit <- rjitter(childcare_ppp,
                              retry = TRUE, 
                              nsim = 1, # number of simulations
@@ -154,7 +153,7 @@ childcare_ppp_jit <- rjitter(childcare_ppp,
 any(duplicated(childcare_ppp_jit)) # checks if there are any duplicated in the jit version of childcare
 ```
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 CHAS_ppp_jit <- rjitter(CHAS_ppp,
                              retry = TRUE, 
                              nsim = 1, 
@@ -168,36 +167,36 @@ Now we want to plot it in a graph. However, we cannot use _tmap_ like how we did
 
 Specifying which of the data we want to use.
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 pg <- mpsz[mpsz@data$PLN_AREA_N=="Punggol"]
 ```
 
 ### Converting SpatialPolygonDataFrame into SpatialPologons object
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 pg_sp <- as(pg, "SpatialPolygons")
 ```
 
 ### Converting SpatialPolygons into owin object
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 pg_owin <- as(pg_sp, "owin")
 ```
 
 ### Extracting spatial points window owin
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 childcare_pg <- childcare_ppp_jit[pg_owin]
 CHAS_pg <- CHAS_ppp_jit[pg_owin]
 ```
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 plot(childcare_pg)
 ```
 
 ## L-Function
 
-``` {r}
+``` {r echo=TRUE, eval=TRUE}
 L_childcare <- envelope(childcare_pg,
                         Lest, 
                         nsim = 99, 
@@ -207,7 +206,7 @@ L_childcare <- envelope(childcare_pg,
 
 After the iterations are done, it should go through this chunk in order to get an interactive version of the map. 
 
-```{r}
+```{r echo=TRUE, eval=FALSE}
 title <- "Pairwise Distance: L function"
 
 Lcsr_df <- as.data.frame(L_CHAS.csr)
