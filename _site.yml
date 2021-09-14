@@ -11,8 +11,8 @@ navbar:
           href: 
         - text: "Take Home Exercise 2"
           href: 
-      - text: "In-class Exercise"
-        href: index.html
-      - text: "About"
-        href: about.html
+    - text: "In-Class Exercise"
+      href: index.html
+    - text: "About"
+      href: about.html
 output: distill::distill_article

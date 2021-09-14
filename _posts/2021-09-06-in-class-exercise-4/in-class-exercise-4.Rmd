@@ -1,5 +1,5 @@
 ---
-title: "In-class Exercise 4"
+title: "In-Class Exercise 4"
 description: |
   In this in-class exercise, we learn about OneMap API and how to use and analyse the data. 
 author:
