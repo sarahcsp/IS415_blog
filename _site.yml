@@ -1,5 +1,6 @@
 name: "IS415_blog"
 title: "IS415 blog"
+theme: Before I Sleep.css
 description: |
   IS415 blog
 output_dir: "_site"
@@ -8,6 +9,8 @@ navbar:
     - text: "Take Home Exercise"
       menu:
       - text: "Take Home Exercise 1"
+        href: 
+      - text: "Take Home Exercise 2"
         href: 
     - text: "In-class Exercise"
       href: index.html
