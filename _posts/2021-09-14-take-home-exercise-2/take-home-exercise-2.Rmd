@@ -1,7 +1,7 @@
 ---
 title: "Take Home Exercise 2"
 description: |
-  Take Home Exercise 2: Focusing on Airbnb and how their expansion has impacted our economy. 
+  Take Home Exercise 2: Focusing on Airbnb and how their expansion has impacted our economy. Using Spatial Point Patterns Analysis of Airbnb Listing in Singapore. 
 author:
   - name: Sarah Chin
     url: linkedin.com/in/sarahchin99/
@@ -9,12 +9,170 @@ date: 09-14-2021
 output:
   distill::distill_article:
     self_contained: false
+    toc: true
+    toc_float: true
 ---
 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
+
+# 1. Overview 
+
+Airbnb has expanded their services over 34,000 cities across 191 countries. However, Singapore is still one of the global cities that has yet to legalise short-term rentals offered by platforms such as Airbnb. Despite Singapore's disregard of using Airbnb, there are still tools and datasets about Singapore that allows people to explore how Airbnb are used in the cities. 
+
+
+# 2. Installing and Loading the packages 
+
+``` {r echo=TRUE, eval=TRUE}
+packages = c('maptools', 'sf', 'raster','spatstat', 'tmap', 'onemapsgapi')
+for (p in packages){
+if(!require(p, character.only = T)){
+install.packages(p)
+}
+library(p,character.only = T)
+}
+```
+
+# 3. Section A: Airbnb Distribution in 2019
+
+In this section, we need to investigate if the distribution of Airbnb listings are affected by location factors such as near to existing hotels, MRT services and tourist attractions. 
+
+Before we can analyse these points, we need to import and clean our data. Firstly, we import the Airbnb data using _st_read()_ of sf package and transform the coordinate system to 3414. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb <- read.csv("Airbnb_listing_30062019/30062019.csv")
+```
+
+We also want to extract the number and locations of hotels and tourist attractions in Singapore to see how this competition affects the Airbnb listings. 
+
+``` {r echo=TRUE, eval=TRUE}
+hotels <- read.csv("OneMap_Data/hotels.csv")
+tourism <- read.csv("OneMap_Data/tourism.csv")
+```
+
+Since all the datasets that have been imported are in _.csv_ format, we would need to convert them to _sf_ for further analysis. Additionally, we need to change the coordinate system to _3414_, the coordinate system of Singapore. As all of the data provided for latitude and longitude are in decimal degree format, we will assume that the data is in *wgs84* Geographic Coordinate System. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_sf <- st_as_sf(airbnb, 
+                       coords = c("longitude", "latitude"),
+                       crs=4326) %>%
+  st_transform(crs = 3414)
+
+hotels_sf <- st_as_sf(hotels, 
+                       coords = c("Lng", "Lat"),
+                       crs=4326) %>%
+  st_transform(crs = 3414)
+
+tourism_sf <- st_as_sf(tourism, 
+                       coords = c("Lng", "Lat"),
+                       crs=4326) %>%
+  st_transform(crs = 3414)
+```
+
+Let's plot to review the datasets that have been provided. This is the Airbnb map using _airbnb_sf_.
+
+``` {r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+tm_shape(airbnb_sf) + 
+  tm_dots(alpha = 0.4, 
+          col = "blue", 
+          size = 0.05)
+```
+
+Here is the hotels map using _hotels_sf_.
+
+``` {r echo=TRUE, eval=TRUE}
+tm_shape(hotels_sf) + 
+  tm_dots(alpha = 0.4, 
+          col = "red", 
+          size = 0.05)
+```
+
+Here are the tourist attractions available in Singapore, using _tourism_sf_.
+
+``` {r echo=TRUE, eval=TRUE}
+tm_shape(tourism_sf) + 
+  tm_dots(alpha = 0.4, 
+          col = "purple", 
+          size = 0.05)
+```
+
+As we can see from the above results for _tourism_sf_, there is a coordinate that is not within Singapore. This means that this point (Longitude and Latitude) could possibly be N/A. We can verify this by searching for any missing values. 
+
+``` {r echo=TRUE, eval=TRUE}
+sum(is.na(tourism_sf$LATITUDE))
+```
+
+From the results, we can tell that there is one N/A result in the column _"LATITUDE"_ under the _tourism_sf_ dataset. We shall remove that N/A value to concentrate our findings on Singapore. 
+
+``` {r echo=TRUE, eval=TRUE}
+tourism_sf <- tourism_sf[!is.na(tourism_sf$LATITUDE),]
+```
+
+After the N/A row has been removed, we can plot the graph again to see if there's an improvement. 
+
+``` {r echo=TRUE, eval=TRUE}
+tm_shape(tourism_sf) + 
+  tm_dots(alpha = 0.4, 
+          col = "purple", 
+          size = 0.05)
+```
+
+After cleaning the _tourism_sf_ dataset, we can finally put the 3 datasets together to see if there are any correlation between the datasets. The Airbnb dataset are highlighted in blue, the hotels dataset are highlighted in red and the tourism dataset highlighted in purple. 
+
+``` {r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+tm_shape(airbnb_sf) + 
+  tm_dots(alpha = 0.4, 
+          col = "blue", 
+          size = 0.05) +
+tm_shape(hotels_sf) + 
+  tm_dots(alpha = 0.4, 
+          col = "red", 
+          size = 0.05) +
+tm_shape(tourism_sf) + 
+  tm_dots(alpha = 0.4, 
+          col = "purple", 
+          size = 0.05)
+```
+
+From the above plotted map, we can tell that the Airbnb facilities have been spread widely over Singapore, covering places that even the hotels are not available in. On the other hand, majority of the hotels are located in the central district of Singapore with the exception of some hotels such as RM Hotel on the far west and Changi hotels in the east. However, the location of the hotels can be related to the tourism locations. As seen above, the locations of most of the tourist attractions are within the central district of Singapore as well. In order to capitalise and profit from tourists, hotels would locate themselves nearer to the tourist attractions as tourists would prefer to be nearer to these attractions. 
+
+Now that we have plotted our graph, we can start the geospatial data wrangling process. 
+
+## Geospatial Data Wrangling
+
+One of the objectives in this task is to derive the kernel density maps of the Airbnb listings, hotels, MRT services and tourist attractions. In order to analyse any of the data that we have plotted so far, we would need to further clean the data with the following steps. 
+
+### Step 1: Converting sf data frames to sp's Spatial class
+
+As the _airbnb_sf_, _hotels_sf_ and _tourism_sf_ are all in sf data frame, we would need to first convert them into Spatial class. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_spatial <- as_Spatial(airbnb_sf)
+hotels_spatial <- as_Spatial(hotels_sf)
+tourism_spatial <- as_Spatial(tourism_sf)
+```
+
+``` {r echo=TRUE, eval=FALSE}
+airbnb_spatial
+```
+
+``` {r echo=TRUE, eval=FALSE}
+hotels_spatial
+```
+
+``` {r echo=TRUE, eval=FALSE}
+tourism_spatial
+```
+
+
+
+
+
+
 
 
 

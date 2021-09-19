@@ -1,0 +1,170 @@
+---
+title: "Hands on Exercise 6"
+description: |
+  In this Hands on exercise, we learn more about how we can derive spatial weights by using functions provided by the spdep package. This exercise also helps us learn how to apply these spatial weights to compute spatially lagged values. 
+author:
+  - name: Sarah Chin
+    url: linkedin.com/in/sarahchin99/
+date: 09-19-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Installing and loading packages 
+
+``` {r echo=TRUE, eval=TRUE}
+packages = c('sf', 'spdep', 'tmap', 'tidyverse')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+# Importing datasets 
+
+## Importing shapefile into R environment 
+
+``` {r echo=TRUE, eval=TRUE}
+hunan <- st_read(dsn = "data/shapefile", 
+                 layer = "Hunan")
+```
+
+## Importing csv file into R environment 
+
+``` {r echo=TRUE, eval=TRUE}
+hunan2012 <- read_csv("data/attribute/Hunan_2012.csv")
+```
+
+# Performing Relation Join
+
+This will be used toupdate the attribute table of _hunan_ using the _left_join()_ function. 
+
+``` {r echo=TRUE, eval=TRUE}
+hunan <- left_join(hunan,hunan2012)
+```
+
+# Visualise Regional Development Indicator 
+
+``` {r echo=TRUE, eval=TRUE}
+qtm(hunan, "GDPPC")
+```
+
+## Computing Continguity Spatial Weights 
+
+In this section, we will learn how to use _poly2nb()_ of spdep package to compute contiguity weight matrices for the study area. This function builds a neighbours list based on regions with contiguous boundaries. 
+
+### Computing (QUEEN) continguity based neighbours
+
+``` {r echo=TRUE, eval=TRUE}
+wm_q <- poly2nb(hunan, queen=TRUE)
+summary(wm_q)
+```
+
+The summary report above shows that there are 88 area units in Hunan. The most connected area unit has 11 neighbours. There are two area units with only one heighbours.
+
+We can use _wm_q_ to see the neighbours for the first polygon in the object.
+
+``` {r echo=TRUE, eval=TRUE}
+wm_q[[1]]
+```
+
+Polygon 1 has 5 neighbors. The numbers represent the polygon IDs as stored in hunan SpatialPolygonsDataFrame class.
+
+To retrieve the country name, Polygon ID=1, we can use this: 
+
+``` {r echo=TRUE, eval=TRUE}
+hunan$County[1]
+```
+
+To retrieve the country names of the 5 neighbouring polygons, we can use this: 
+
+``` {r echo=TRUE, eval=TRUE}
+hunan$NAME_3[c(2,3,4,57,85)]
+```
+
+Compute weight matric by using _str()_.
+
+``` {r echo=TRUE, eval=TRUE}
+str(wm_q)
+```
+
+### Creating (ROOK) contiguity based neighbours 
+
+``` {r echo=TRUE, eval=TRUE}
+wm_r <- poly2nb(hunan, queen=FALSE)
+summary(wm_r)
+```
+
+The summary report above shows that there are 88 area units in Hunan. The most connect area unit has 10 neighbours. There are two area units with only one neighbours.
+
+### Visualising contiguity weights
+
+To get our longitude values we map the st_centroid function over the geometry column of us.bound and access the longitude value through double bracket notation [[]] and 1. This allows us to get only the longitude, which is the first value in each centroid.
+
+``` {r echo=TRUE, eval=TRUE}
+longitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[1]])
+```
+
+We do the same for latitude. 
+
+``` {r echo=TRUE, eval=TRUE}
+latitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[2]])
+```
+
+Next, we use cbind to put longitude and latitude into the same object. 
+
+``` {r echo=TRUE, eval=TRUE}
+coords <- cbind(longitude, latitude)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+head(coords)
+```
+
+Next, we plot Queen continguity based neighbour maps. 
+
+``` {r echo=TRUE, eval=TRUE}
+plot(hunan$geometry, border="lightgrey")
+plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col= "red")
+```
+
+#### Plotting Rook contiguity based neighbours maps
+
+``` {r echo=TRUE, eval=TRUE}
+plot(hunan$geometry, border="lightgrey")
+plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+``` {r echo=TRUE, eval=TRUE}
+par(mfrow=c(1,2))
+plot(hunan$geometry, border="lightgrey")
+plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col= "red", main="Queen Contiguity")
+plot(hunan$geometry, border="lightgrey")
+plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red", main="Rook Contiguity")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
