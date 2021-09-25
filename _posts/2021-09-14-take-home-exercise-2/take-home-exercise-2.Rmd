@@ -52,7 +52,20 @@ hotels <- read.csv("OneMap_Data/hotels.csv")
 tourism <- read.csv("OneMap_Data/tourism.csv")
 ```
 
-Since all the datasets that have been imported are in _.csv_ format, we would need to convert them to _sf_ for further analysis. Additionally, we need to change the coordinate system to _3414_, the coordinate system of Singapore. As all of the data provided for latitude and longitude are in decimal degree format, we will assume that the data is in *wgs84* Geographic Coordinate System. 
+Extracting the data for MRT stations are also important for analysis. As the data for MRT station is in _shp_ file format, we will use the following code to extract the data. 
+
+``` {r echo=TRUE, eval=TRUE}
+mrt <- st_read(dsn = "TrainStation", 
+                layer = "MRTLRTStnPtt")
+```
+
+``` {r}
+qtm(mrt, 
+    fill = geometry)
+
+```
+
+Since the Airbnb, hotels and tourists datasets that have been imported are in _.csv_ format, we would need to convert them to _sf_ for further analysis. Additionally, we need to change the coordinate system to _3414_, the coordinate system of Singapore. As all of the data provided for latitude and longitude are in decimal degree format, we will assume that the data is in *wgs84* Geographic Coordinate System. 
 
 ``` {r echo=TRUE, eval=TRUE}
 airbnb_sf <- st_as_sf(airbnb, 
@@ -135,6 +148,10 @@ tm_shape(hotels_sf) +
 tm_shape(tourism_sf) + 
   tm_dots(alpha = 0.4, 
           col = "purple", 
+          size = 0.05) +
+tm_shape(mrt) +
+  tm_dots(alpha = 0.4, 
+          col = "green", 
           size = 0.05)
 ```
 
@@ -156,17 +173,166 @@ hotels_spatial <- as_Spatial(hotels_sf)
 tourism_spatial <- as_Spatial(tourism_sf)
 ```
 
-``` {r echo=TRUE, eval=FALSE}
+``` {r echo=FALSE, eval=TRUE}
 airbnb_spatial
 ```
 
-``` {r echo=TRUE, eval=FALSE}
+``` {r echo=FALSE, eval=TRUE}
 hotels_spatial
 ```
 
-``` {r echo=TRUE, eval=FALSE}
+``` {r echo=FALSE, eval=TRUE}
 tourism_spatial
 ```
+
+### Step 2: Converting Spatial class into sp format 
+
+As *spatstat* requires the data in *_ppp_* format and there is no direct way to convert *Spatial* class into *_ppp_*, we need to first convert the data into *Spatial* object. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_sp <- as(airbnb_spatial, "SpatialPoints")
+hotels_sp <- as(hotels_spatial, "SpatialPoints")
+tourism_sp <- as(tourism_spatial, "SpatialPoints")
+```
+
+``` {r echo=FALSE, eval=TRUE}
+airbnb_sp
+```
+
+``` {r echo=FALSE, eval=TRUE}
+hotels_sp
+```
+
+``` {r echo=FALSE, eval=TRUE}
+tourism_sp
+```
+
+### Step 3: Converting sp format into spatstat's ppp format 
+
+Now that the datasets are in _sp_ format, we can finally convert the datasets into _ppp_ object format. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_ppp <- as(airbnb_sp, "ppp")
+hotels_ppp <- as(hotels_sp, "ppp")
+tourism_ppp <- as(tourism_sp, "ppp")
+```
+
+``` {r echo=FALSE, eval=TRUE}
+airbnb_ppp
+```
+
+``` {r echo=FALSE, eval=TRUE}
+hotels_ppp 
+```
+
+``` {r echo=FALSE, eval=TRUE}
+tourism_ppp
+```
+
+### Handling duplicated points 
+
+Before we can proceed, we need to check to see if the data contains any duplicated points. We can do so by using the _any(duplicated())_ function. 
+
+``` {r echo=TRUE, eval=TRUE}
+any(duplicated(airbnb_ppp))
+any(duplicated(hotels_ppp))
+any(duplicated(tourism_ppp))
+```
+
+From the above results, we can tell that all 3 datasets contain duplicated points. Therefore, we need to properly handle them before moving on. We can use jittering, which is a solution that adds a small perturbation to the duplicated points, ensuring that the points do not occupy the same space. We can use this solution by using the following code: 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_ppp_jit <- rjitter(airbnb_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+hotels_ppp_jit <- rjitter(hotels_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+tourism_ppp_jit <- rjitter(tourism_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+```
+
+After running the code above, let's check to see if there are any duplicated points left. 
+
+``` {r echo=TRUE, eval=TRUE}
+any(duplicated(airbnb_ppp_jit))
+any(duplicated(hotels_ppp_jit))
+any(duplicated(tourism_ppp_jit))
+```
+
+### Creating owin object 
+
+In order to properly analyse the data within Singapore, we need to create an object owin to represent the Singapore boundary as a polygonal region. We will use the _MPSZ_SUBZONE_WEB_PL_ dataset that was used in Hands on exercise 4. 
+
+``` {r echo=TRUE, eval=TRUE}
+mpsz_sf <- st_read(dsn = "data", 
+                layer = "MP14_SUBZONE_WEB_PL")
+
+mpsz_spatial <- as_Spatial(mpsz_sf)
+
+mpsz_sp <- as(mpsz_spatial, "SpatialPolygons")
+
+mpsz_owin <- as(mpsz_sp, "owin")
+```
+
+Next, let's plot _mpsz_owin_ to see the subzones and the outline of Singapore. 
+
+``` {r}
+plot(mpsz_owin)
+```
+
+### Combining the owin object with the points object 
+
+``` {r}
+plot(airbnb_ppp_jit)
+```
+
+``` {r}
+kde_airbnb_bw <- density(airbnb_ppp,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+```
+
+``` {r}
+plot(kde_airbnb_bw)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
