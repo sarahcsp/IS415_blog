@@ -59,10 +59,12 @@ mrt <- st_read(dsn = "TrainStation",
                 layer = "MRTLRTStnPtt")
 ```
 
-``` {r}
-qtm(mrt, 
-    fill = geometry)
+Since the MRT dataset is a _shp_ file, it can be plotted immediately. 
 
+``` {r}
+tmap_mode("view")
+tm_shape(mrt) + 
+  tm_dots()
 ```
 
 Since the Airbnb, hotels and tourists datasets that have been imported are in _.csv_ format, we would need to convert them to _sf_ for further analysis. Additionally, we need to change the coordinate system to _3414_, the coordinate system of Singapore. As all of the data provided for latitude and longitude are in decimal degree format, we will assume that the data is in *wgs84* Geographic Coordinate System. 
@@ -133,7 +135,7 @@ tm_shape(tourism_sf) +
           size = 0.05)
 ```
 
-After cleaning the _tourism_sf_ dataset, we can finally put the 3 datasets together to see if there are any correlation between the datasets. The Airbnb dataset are highlighted in blue, the hotels dataset are highlighted in red and the tourism dataset highlighted in purple. 
+After cleaning the _tourism_sf_ dataset, we can finally put the 3 datasets together to see if there are any correlation between the datasets. The Airbnb dataset are highlighted in blue, the hotels dataset are highlighted in red and the tourism dataset highlighted in purple. Here's all the datasets together: 
 
 ``` {r echo=TRUE, eval=TRUE}
 tmap_mode("view")
@@ -155,7 +157,7 @@ tm_shape(mrt) +
           size = 0.05)
 ```
 
-From the above plotted map, we can tell that the Airbnb facilities have been spread widely over Singapore, covering places that even the hotels are not available in. On the other hand, majority of the hotels are located in the central district of Singapore with the exception of some hotels such as RM Hotel on the far west and Changi hotels in the east. However, the location of the hotels can be related to the tourism locations. As seen above, the locations of most of the tourist attractions are within the central district of Singapore as well. In order to capitalise and profit from tourists, hotels would locate themselves nearer to the tourist attractions as tourists would prefer to be nearer to these attractions. 
+From the above plotted map, we can tell that the Airbnb facilities have been spread widely over Singapore, covering places that even the hotels are not available in. On the other hand, majority of the hotels are located in the central district of Singapore with the exception of some hotels such as RM Hotel on the far west and Changi hotels in the east. However, the location of the hotels can be related to the tourism locations. As seen above, the locations of most of the tourist attractions are within the central district of Singapore as well. In order to capitalise and profit from tourists, hotels would locate themselves nearer to the tourist attractions as tourists would prefer to be nearer to these attractions. For the MRT lines, we can see that it correlates closely with the Airbnb locations, especially in the Northern region of Singapore. This could be because the Airbnb hosts believe that being near an MRT station would be more attractive to tourists for easy access to transport. 
 
 Now that we have plotted our graph, we can start the geospatial data wrangling process. 
 
@@ -171,6 +173,7 @@ As the _airbnb_sf_, _hotels_sf_ and _tourism_sf_ are all in sf data frame, we wo
 airbnb_spatial <- as_Spatial(airbnb_sf)
 hotels_spatial <- as_Spatial(hotels_sf)
 tourism_spatial <- as_Spatial(tourism_sf)
+mrt_spatial <- as_Spatial(mrt)
 ```
 
 ``` {r echo=FALSE, eval=TRUE}
@@ -185,6 +188,10 @@ hotels_spatial
 tourism_spatial
 ```
 
+``` {r echo=FALSE, eval=TRUE}
+mrt_spatial
+```
+
 ### Step 2: Converting Spatial class into sp format 
 
 As *spatstat* requires the data in *_ppp_* format and there is no direct way to convert *Spatial* class into *_ppp_*, we need to first convert the data into *Spatial* object. 
@@ -193,6 +200,7 @@ As *spatstat* requires the data in *_ppp_* format and there is no direct way to 
 airbnb_sp <- as(airbnb_spatial, "SpatialPoints")
 hotels_sp <- as(hotels_spatial, "SpatialPoints")
 tourism_sp <- as(tourism_spatial, "SpatialPoints")
+mrt_sp <- as(mrt_spatial, "SpatialPoints")
 ```
 
 ``` {r echo=FALSE, eval=TRUE}
@@ -207,6 +215,10 @@ hotels_sp
 tourism_sp
 ```
 
+``` {r echo=FALSE, eval=TRUE}
+mrt_sp
+```
+
 ### Step 3: Converting sp format into spatstat's ppp format 
 
 Now that the datasets are in _sp_ format, we can finally convert the datasets into _ppp_ object format. 
@@ -215,6 +227,7 @@ Now that the datasets are in _sp_ format, we can finally convert the datasets in
 airbnb_ppp <- as(airbnb_sp, "ppp")
 hotels_ppp <- as(hotels_sp, "ppp")
 tourism_ppp <- as(tourism_sp, "ppp")
+mrt_ppp <- as(mrt_sp, "ppp")
 ```
 
 ``` {r echo=FALSE, eval=TRUE}
@@ -229,6 +242,10 @@ hotels_ppp
 tourism_ppp
 ```
 
+``` {r echo=FALSE, eval=TRUE}
+mrt_ppp
+```
+
 ### Handling duplicated points 
 
 Before we can proceed, we need to check to see if the data contains any duplicated points. We can do so by using the _any(duplicated())_ function. 
@@ -237,9 +254,10 @@ Before we can proceed, we need to check to see if the data contains any duplicat
 any(duplicated(airbnb_ppp))
 any(duplicated(hotels_ppp))
 any(duplicated(tourism_ppp))
+any(duplicated(mrt_ppp))
 ```
 
-From the above results, we can tell that all 3 datasets contain duplicated points. Therefore, we need to properly handle them before moving on. We can use jittering, which is a solution that adds a small perturbation to the duplicated points, ensuring that the points do not occupy the same space. We can use this solution by using the following code: 
+From the above results, we can tell that 3 datasets, excluding _mrt_pp_, contain duplicated points. Therefore, we need to properly handle them before moving on. We can use jittering, which is a solution that adds a small perturbation to the duplicated points, ensuring that the points do not occupy the same space. We can use this solution by using the following code: 
 
 ``` {r echo=TRUE, eval=TRUE}
 airbnb_ppp_jit <- rjitter(airbnb_ppp, 
@@ -289,39 +307,209 @@ plot(mpsz_owin)
 
 ### Combining the owin object with the points object 
 
-``` {r}
-plot(airbnb_ppp_jit)
+Lastly, we extract the individual datasets' points that are located within Singapore using this code: 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnbSG_ppp <- airbnb_ppp[mpsz_owin]
+hotelsSG_ppp <- hotels_ppp[mpsz_owin]
+tourismSG_ppp <- tourism_ppp[mpsz_owin]
+mrtSG_ppp <- mrt_ppp[mpsz_owin]
 ```
 
-``` {r}
-kde_airbnb_bw <- density(airbnb_ppp,
+**Airbnb**
+
+``` {r echo=TRUE, eval=TRUE}
+plot(airbnbSG_ppp)
+```
+
+**Hotels**
+
+``` {r echo=TRUE, eval=TRUE}
+plot(hotelsSG_ppp)
+```
+
+**Tourist Attractions**
+
+``` {r echo=TRUE, eval=TRUE}
+plot(tourismSG_ppp)
+```
+
+*MRT Stations*
+
+``` {r echo=TRUE, eval=TRUE}
+plot(mrtSG_ppp)
+```
+
+## First-Order Spatial Point Patterns Analysis 
+
+Now that we have found the _ppp_ values of all the datasets, we can proceed to calculate the kernel density estimation (KDE) layer to visualise and explore the intensity of point processes. 
+
+Using the code chunk below, we will be able to produce and plot the kernel density of all the datasets. 
+
+**Airbnb**
+
+``` {r echo=TRUE, eval=TRUE}
+kde_airbnb_bw <- density(airbnbSG_ppp,
                               sigma=bw.diggle,
                               edge=TRUE,
                             kernel="gaussian") 
-```
 
-``` {r}
 plot(kde_airbnb_bw)
 ```
 
+As we can see from the plot above, the output range is too small for us to make any analysis. We will need to convert the unit of measure from meter to kilometer. 
 
+``` {r echo=FALSE, eval=TRUE}
+airbnbSG_ppp.km <- rescale(airbnbSG_ppp, 1000, "km")
+```
 
+Now, we will be able to re-run the code and plot the KDE map. 
 
+``` {r echo=TRUE, eval=TRUE}
+kde_airbnbSG.bw <- density(airbnbSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_airbnbSG.bw, main = "Airbnb bw.ppl")
+```
 
+Now, we will do the same KDE plotting for the rest of the datasets: Hotels, Tourist Attractions and MRT stations. 
 
+**Hotels**
 
+``` {r echo=TRUE, eval=TRUE}
+kde_hotels_bw <- density(hotelsSG_ppp,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
 
+plot(kde_hotels_bw)
+```
 
+Similar to the Airbnb dataset, we shall convert the unit of measurement and plot the density map again. 
 
+``` {r echo=TRUE, eval=TRUE}
+hotelsSG_ppp.km <- rescale(hotelsSG_ppp, 1000, "km")
 
+kde_hotelsSG.bw <- density(hotelsSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_hotelsSG.bw, main = "Hotels bw.ppl")
+```
 
+**Tourist Attractions**
 
+``` {r echo=TRUE, eval=TRUE}
+kde_tourism_bw <- density(tourismSG_ppp,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
 
+plot(kde_tourism_bw)
+```
 
+``` {r echo=TRUE, eval=TRUE}
+tourismSG_ppp.km <- rescale(tourismSG_ppp, 1000, "km")
 
+kde_tourismSG.bw <- density(tourismSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_tourismSG.bw, main = "Tourist Attractions bw.ppl")
+```
 
+**MRT Stations**
 
+``` {r echo=TRUE, eval=TRUE}
+kde_mrt_bw <- density(mrtSG_ppp,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
 
+plot(kde_mrt_bw)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+mrtSG_ppp.km <- rescale(mrtSG_ppp, 1000, "km")
+
+kde_mrtSG.bw <- density(mrtSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_mrtSG.bw, main = "MRT Stations bw.ppl")
+```
+
+Now that the First Order Analysis has been completed, we can move on to the Second Order Spatial Point Patterns Analysis. However, we would need to analyze the spatial points using G-Function before we can do so. In order to do that, we must first conduct the Nearest Neighbour Analysis
+
+## Nearest Neighbour Analysis 
+
+For Nearest Neighbour Analysis, we will be using the Clark-Evans test of aggregation for a spatial point pattern analysis. 
+
+The test hypotheses will adjust according to the four different factors: Airbnb, Hotels, Tourist Attractions and MRT Station. Here are the hypotheses: 
+
+Ho = The distribution of each factor are randomly distributed.
+
+H1 = The distribution of each factor are not randomly distributed. 
+
+For this hypothesis, we will use the 95% confident interval. 
+
+__Airbnb__
+
+``` {r echo=TRUE, eval=TRUE}
+clarkevans.test(airbnbSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                nsim=99)
+```
+
+__Hotels__
+
+``` {r echo=TRUE, eval=TRUE}
+clarkevans.test(hotelsSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                nsim=99)
+```
+
+__Tourist Attractions__
+
+``` {r echo=TRUE, eval=TRUE}
+clarkevans.test(tourismSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                nsim=99)
+```
+
+__MRT Stations__
+
+``` {r echo=TRUE, eval=TRUE}
+clarkevans.test(mrtSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                nsim=99)
+```
+
+As seen above, all the tests have resulted in _alternative hypothesis: clustered (R < 1)_. This means that the point pattern of all the datasets have resulted in the alternative hypothesis, the clustered point pattern. Now that we have performed the Clark-Evans test, we can proceed with the Second-Order Spatial Point Patterns Analysis. 
+
+## Second-Order Spatial Point Patterns Analysis
+
+For the Second-Order Spatial Point Patterns Analysis, we will use the K-function to estimate the distribution of the different factors. 
+
+First, let's take a look at the Airbnb dataset. We will use _Fest()_ to compute the F-function of the dataset. 
+
+``` {r echo=TRUE, eval=TRUE}
+F_airbnb = Fest(airbnb_ppp)
+plot(F_airbnb)
+```
+
+As seen in the graph above, the estimated line, _K(iso)_, is much higher than the actual line, _K(pois)_. Now we will now perform the Complete Spatial Randomness Test. We will have the following hypothesis: 
+
+Ho = The distribution of Airbnb locations are randomly distributed. 
+
+H1 = The distribution of Airbnb locations are not randomly distributed. 
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001. 
+
+``` {r echo=TRUE, eval=TRUE}
+F_airbnb.csr <- envelope(airbnb_ppp, Fest, nsim = 999)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(F_airbnb.csr)
+```
 
 
 

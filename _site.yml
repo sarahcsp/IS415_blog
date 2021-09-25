@@ -1,7 +1,7 @@
 name: "IS415_blog"
-title: "IS415 blog"
+title: "Sarah's IS415 blog"
 description: |
-  IS415 blog
+  Sarah's IS415 blog
 output_dir: "_site"
 navbar:
   right:
