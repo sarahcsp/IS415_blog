@@ -26,7 +26,7 @@ Airbnb has expanded their services over 34,000 cities across 191 countries. Howe
 # 2. Installing and Loading the packages 
 
 ``` {r echo=TRUE, eval=TRUE}
-packages = c('maptools', 'sf', 'raster','spatstat', 'tmap', 'onemapsgapi')
+packages = c('maptools', 'sf', 'raster','spatstat', 'tmap', 'onemapsgapi', 'tidyverse', 'lubridate')
 for (p in packages){
 if(!require(p, character.only = T)){
 install.packages(p)
@@ -64,7 +64,8 @@ Since the MRT dataset is a _shp_ file, it can be plotted immediately.
 ``` {r}
 tmap_mode("view")
 tm_shape(mrt) + 
-  tm_dots()
+  tm_dots() + 
+  tm_basemap("OpenStreetMap")
 ```
 
 Since the Airbnb, hotels and tourists datasets that have been imported are in _.csv_ format, we would need to convert them to _sf_ for further analysis. Additionally, we need to change the coordinate system to _3414_, the coordinate system of Singapore. As all of the data provided for latitude and longitude are in decimal degree format, we will assume that the data is in *wgs84* Geographic Coordinate System. 
@@ -93,7 +94,8 @@ tmap_mode("view")
 tm_shape(airbnb_sf) + 
   tm_dots(alpha = 0.4, 
           col = "blue", 
-          size = 0.05)
+          size = 0.05) +
+  tm_basemap("OpenStreetMap")
 ```
 
 Here is the hotels map using _hotels_sf_.
@@ -102,7 +104,8 @@ Here is the hotels map using _hotels_sf_.
 tm_shape(hotels_sf) + 
   tm_dots(alpha = 0.4, 
           col = "red", 
-          size = 0.05)
+          size = 0.05) +
+  tm_basemap("OpenStreetMap")
 ```
 
 Here are the tourist attractions available in Singapore, using _tourism_sf_.
@@ -111,7 +114,8 @@ Here are the tourist attractions available in Singapore, using _tourism_sf_.
 tm_shape(tourism_sf) + 
   tm_dots(alpha = 0.4, 
           col = "purple", 
-          size = 0.05)
+          size = 0.05) +
+  tm_basemap("OpenStreetMap")
 ```
 
 As we can see from the above results for _tourism_sf_, there is a coordinate that is not within Singapore. This means that this point (Longitude and Latitude) could possibly be N/A. We can verify this by searching for any missing values. 
@@ -132,7 +136,8 @@ After the N/A row has been removed, we can plot the graph again to see if there'
 tm_shape(tourism_sf) + 
   tm_dots(alpha = 0.4, 
           col = "purple", 
-          size = 0.05)
+          size = 0.05) +
+  tm_basemap("OpenStreetMap")
 ```
 
 After cleaning the _tourism_sf_ dataset, we can finally put the 3 datasets together to see if there are any correlation between the datasets. The Airbnb dataset are highlighted in blue, the hotels dataset are highlighted in red and the tourism dataset highlighted in purple. Here's all the datasets together: 
@@ -154,7 +159,12 @@ tm_shape(tourism_sf) +
 tm_shape(mrt) +
   tm_dots(alpha = 0.4, 
           col = "green", 
-          size = 0.05)
+          size = 0.05) +
+tm_basemap("OpenStreetMap")
+```
+
+``` {r}
+tmap_mode("plot")
 ```
 
 From the above plotted map, we can tell that the Airbnb facilities have been spread widely over Singapore, covering places that even the hotels are not available in. On the other hand, majority of the hotels are located in the central district of Singapore with the exception of some hotels such as RM Hotel on the far west and Changi hotels in the east. However, the location of the hotels can be related to the tourism locations. As seen above, the locations of most of the tourist attractions are within the central district of Singapore as well. In order to capitalise and profit from tourists, hotels would locate themselves nearer to the tourist attractions as tourists would prefer to be nearer to these attractions. For the MRT lines, we can see that it correlates closely with the Airbnb locations, especially in the Northern region of Singapore. This could be because the Airbnb hosts believe that being near an MRT station would be more attractive to tourists for easy access to transport. 
@@ -370,6 +380,37 @@ kde_airbnbSG.bw <- density(airbnbSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="
 plot(kde_airbnbSG.bw, main = "Airbnb bw.ppl")
 ```
 
+In order to plot the kernel density maps on the OpenStreetMap, we need to convert the kernel density map into a grid object which will then be converted into a raster object. 
+
+``` {r echo=TRUE, eval=TRUE}
+grid_kde_airbnbSG.bw <- as.SpatialGridDataFrame.im(kde_airbnb_bw)
+raster_kde_airbnbSG.bw <- raster(grid_kde_airbnbSG.bw)
+```
+
+After converting into a raster object, we need to check if the CRS projection has been set. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_airbnbSG.bw)
+```
+
+Note that the CRS argument is NA. This means that no projection has been assigned to the raster object. To assign the correct projection to the raster object, we use the code below: 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_airbnbSG.bw) = "+init=EPSG:3414"
+crs(raster_kde_airbnbSG.bw)
+```
+
+Now that the raster object has its projection, we can finally plot the kernel density map. 
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+  tm_shape(raster_kde_airbnbSG.bw) +
+  tm_raster(alpha=0.6,
+            "v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE) +
+  tm_basemap("OpenStreetMap")
+```
+
 Now, we will do the same KDE plotting for the rest of the datasets: Hotels, Tourist Attractions and MRT stations. 
 
 **Hotels**
@@ -392,6 +433,37 @@ kde_hotelsSG.bw <- density(hotelsSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="
 plot(kde_hotelsSG.bw, main = "Hotels bw.ppl")
 ```
 
+Converting to grid before converting to raster. 
+
+``` {r echo=TRUE, eval=TRUE}
+grid_kde_hotelsSG.bw <- as.SpatialGridDataFrame.im(kde_hotels_bw)
+raster_kde_hotelsSG.bw <- raster(grid_kde_hotelsSG.bw)
+```
+
+Checking CRS projection. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_hotelsSG.bw)
+```
+
+Setting the CRS projection. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_hotelsSG.bw) = "+init=EPSG:3414"
+crs(raster_kde_hotelsSG.bw)
+```
+
+Plotting the Hotels Kernel Density Map. 
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+  tm_shape(raster_kde_hotelsSG.bw) +
+  tm_raster(alpha=0.6,
+            "v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE) +
+  tm_basemap("OpenStreetMap")
+```
+
 **Tourist Attractions**
 
 ``` {r echo=TRUE, eval=TRUE}
@@ -408,6 +480,37 @@ tourismSG_ppp.km <- rescale(tourismSG_ppp, 1000, "km")
 
 kde_tourismSG.bw <- density(tourismSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
 plot(kde_tourismSG.bw, main = "Tourist Attractions bw.ppl")
+```
+
+Converting to grid before converting to raster. 
+
+``` {r echo=TRUE, eval=TRUE}
+grid_kde_tourismSG.bw <- as.SpatialGridDataFrame.im(kde_tourism_bw)
+raster_kde_hotelsSG.bw <- raster(grid_kde_tourismSG.bw)
+```
+
+Checking CRS projection. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_hotelsSG.bw)
+```
+
+Setting the CRS projection. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_hotelsSG.bw) = "+init=EPSG:3414"
+crs(raster_kde_hotelsSG.bw)
+```
+
+Plotting the Hotels Kernel Density Map. 
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+  tm_shape(raster_kde_hotelsSG.bw) +
+  tm_raster(alpha=0.6,
+            "v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE) +
+  tm_basemap("OpenStreetMap")
 ```
 
 **MRT Stations**
@@ -486,16 +589,16 @@ As seen above, all the tests have resulted in _alternative hypothesis: clustered
 
 ## Second-Order Spatial Point Patterns Analysis
 
-For the Second-Order Spatial Point Patterns Analysis, we will use the K-function to estimate the distribution of the different factors. 
+For the Second-Order Spatial Point Patterns Analysis, we will use the G-function to estimate the distribution of the different factors in a point pattern. 
 
-First, let's take a look at the Airbnb dataset. We will use _Fest()_ to compute the F-function of the dataset. 
+First, let's take a look at the Airbnb dataset. We will use _Gest()_ to compute the G-function of the dataset. 
 
 ``` {r echo=TRUE, eval=TRUE}
-F_airbnb = Fest(airbnb_ppp)
-plot(F_airbnb)
+G_airbnb = Gest(airbnb_ppp, correction = "border")
+plot(G_airbnb, xlim=c(0,500))
 ```
 
-As seen in the graph above, the estimated line, _K(iso)_, is much higher than the actual line, _K(pois)_. Now we will now perform the Complete Spatial Randomness Test. We will have the following hypothesis: 
+As seen in the graph above, the actual line, _G(bord)_, is higher than the estimated line, _G(pois)_. Now we will now perform the Complete Spatial Randomness Test. We will have the following hypothesis: 
 
 Ho = The distribution of Airbnb locations are randomly distributed. 
 
@@ -504,12 +607,533 @@ H1 = The distribution of Airbnb locations are not randomly distributed.
 The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001. 
 
 ``` {r echo=TRUE, eval=TRUE}
-F_airbnb.csr <- envelope(airbnb_ppp, Fest, nsim = 999)
+G_airbnb.csr <- envelope(airbnb_ppp, Gest, nsim = 999)
 ```
 
 ``` {r echo=TRUE, eval=TRUE}
-plot(F_airbnb.csr)
+plot(G_airbnb.csr)
 ```
+
+Based on the results above, we can tell that there is a clustered pattern occurring in the Airbnb dataset. As we can see from the graph above, the solid line _G(r)_ increases rapidly at a short distance which means that the data points are clustered. After conducting the Monte Carlo simulation test on the dataset, we can see that the solid line, _G(r)_, lies above the upper envelope which means that the estimated _G(r)_ is statistically significant. 
+
+We will now conduct the same tests on the other factors. 
+
+__Hotels__
+
+``` {r echo=TRUE, eval=TRUE}
+G_hotels = Gest(hotelsSG_ppp, correction = "border")
+plot(G_hotels, xlim=c(0,500))
+```
+
+We will have the following hypothesis: 
+
+Ho = The distribution of Airbnb locations are randomly distributed. 
+
+H1 = The distribution of Airbnb locations are not randomly distributed. 
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001. 
+
+``` {r echo=TRUE, eval=TRUE}
+G_hotels.csr <- envelope(hotelsSG_ppp, Gest, nsim = 999)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(G_hotels.csr)
+```
+
+Based on the results above, the first portion of the estimated _G(r)_ lies above the envelope. This means that the hotels within a certain vicinity are clustered. However, as the hotels grow further, the estimted _G(r)_ starts to fall within the envelope, showing that the hotels seem to appear more homogeneous or random. 
+
+__Tourist Attractions__
+
+``` {r echo=TRUE, eval=TRUE}
+G_tourism = Gest(tourismSG_ppp, correction = "border")
+plot(G_tourism, xlim=c(0,500))
+```
+
+We will have the following hypothesis: 
+
+Ho = The distribution of Airbnb locations are randomly distributed. 
+
+H1 = The distribution of Airbnb locations are not randomly distributed. 
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001. 
+
+
+``` {r echo=TRUE, eval=TRUE}
+G_tourism.csr <- envelope(tourismSG_ppp, Gest, nsim = 999)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(G_tourism.csr)
+```
+
+Based on the results above, the first portion of the estimated _G(r)_ lies above the envelope. This means that the tourist attractions within a certain vicinity are clustered. However, as the tourist attractions grow further, the estimted _G(r)_ starts to fall within the envelope, showing that the tourist attracktions seem to appear more homogeneous or random.
+
+__MRT Stations__
+
+``` {r echo=TRUE, eval=TRUE}
+G_mrt = Gest(mrtSG_ppp, correction = "border")
+plot(G_mrt, xlim=c(0,500))
+```
+
+We will have the following hypothesis: 
+
+Ho = The distribution of Airbnb locations are randomly distributed. 
+
+H1 = The distribution of Airbnb locations are not randomly distributed. 
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001. 
+
+
+``` {r echo=TRUE, eval=TRUE}
+G_mrt.csr <- envelope(mrtSG_ppp, Gest, nsim = 999)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(G_mrt.csr)
+```
+
+Based on the results above, the first portion of the estimated _G(r)_ lies above the envelope. This means that the MRT Stations within a certain vicinity are clustered. However, the estimated _G(r)_ line falls uder the envelope and stays stagnant. This means that there is a regular pattern to the MRT Stations that are in Singapore. 
+
+# Section B: Impact of Covid-19
+
+In this section, we will be analysing the impact of Covid-19 on Airbnb businesses in Singapore. The date range that we will be looking at is from June 2019 to June 2021. 
+
+Before we start analysing, we would need to adjust the dataset accordingly to fit the time period of Covid-19. Ensure that you download the package, _lubridate_, before running the code below. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb$date201921 <- format(as.Date(airbnb$last_review), "%Y-%m")
+```
+
+After ensuring that the date format has been changed, we will need to check if there are any N/A values and remove them. 
+
+``` {r echo=TRUE, eval=TRUE}
+sum(is.na(airbnb$date201921))
+```
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb <- airbnb[!is.na(airbnb$date201921),]
+```
+
+``` {r echo=TRUE, eval=TRUE}
+sum(is.na(airbnb$date201921))
+```
+
+After the N/A values have been removed, we can now proceed to filter according to the Covid-19 period, from June 2019 to June 2021. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb <- airbnb[airbnb[["date201921"]] >= "2019-06",]
+airbnb <- airbnb[airbnb[["date201921"]] <= "2021-06",]
+```
+
+We then find the number of unique values in the _room_type_ column. 
+
+``` {r echo=TRUE, eval=TRUE}
+length(unique(airbnb[["room_type"]]))
+```
+
+Since there are 3 unique values, we find out what different room types there are in the dataset. 
+
+``` {r echo=TRUE, eval=TRUE}
+unique(airbnb[c("room_type")])
+```
+
+After finding out the unique values, we save them in separate datasets. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_private <- airbnb[airbnb[["room_type"]] == "Private room",]
+airbnb_entirehome <- airbnb[airbnb[["room_type"]] == "Entire home/apt",]
+airbnb_shared <- airbnb[airbnb[["room_type"]] == "Shared room",]
+```
+
+We will then convert them to sf format and ensure that their coordinate projection is _3414_.
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_private_sf <- st_as_sf(airbnb_private, 
+                       coords = c("longitude", "latitude"),
+                       crs=4326) %>%
+  st_transform(crs = 3414)
+
+airbnb_entirehome_sf <- st_as_sf(airbnb_entirehome, 
+                       coords = c("longitude", "latitude"),
+                       crs=4326) %>%
+  st_transform(crs = 3414)
+
+airbnb_shared_sf <- st_as_sf(airbnb_shared, 
+                       coords = c("longitude", "latitude"),
+                       crs=4326) %>%
+  st_transform(crs = 3414)
+```
+
+## Geospatial Data Wrangling for Covid-19
+
+Now that we have prepared the datasets, we can continue with geospatial data wrangling. As we did previously, we will be using the following steps. 
+
+### Step 1: Converting sf dataframes to sp's Spatial class
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_private <- as_Spatial(airbnb_private_sf)
+airbnb_entirehome <- as_Spatial(airbnb_entirehome_sf)
+airbnb_shared <- as_Spatial(airbnb_shared_sf)
+```
+
+__Private Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_private
+```
+
+__Entire Homes/Apt__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_entirehome
+```
+
+__Shared Room__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_shared
+```
+
+### Step 2: Converting Spatial class into generic sp format
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_private_sp <- as(airbnb_private, "SpatialPoints")
+airbnb_entirehome_sp <- as(airbnb_entirehome, "SpatialPoints")
+airbnb_shared_sp <- as(airbnb_shared, "SpatialPoints")
+```
+
+__Private Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_private_sp
+```
+
+__Entire Home/Apt__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_entirehome_sp
+```
+
+__Shared Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_shared_sp
+```
+
+### Step 3: Converting generic sp format into spatstat's ppp format
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_private_ppp <- as(airbnb_private_sp, "ppp")
+airbnb_entirehome_ppp <- as(airbnb_entirehome_sp, "ppp")
+airbnb_shared_ppp <- as(airbnb_shared_sp, "ppp")
+```
+
+__Private Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_private_ppp
+```
+
+__Entire Homes/Apt__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_entirehome_ppp
+```
+
+__Shared Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_shared_ppp
+```
+
+Now that we have successfully converted them into the ppp format, we need to handle any possible duplicated points. 
+
+### Handling Duplicated Points 
+
+``` {r echo=TRUE, eval=TRUE}
+any(duplicated(airbnb_private_ppp))
+any(duplicated(airbnb_entirehome_ppp))
+any(duplicated(airbnb_shared_ppp))
+```
+
+Since there are no duplicated points, we can plot the datasets onto a graph using the following code: 
+
+``` {r echo=TRUE, eval=TRUE}
+par(mfrow=c(2,2))
+tmap_mode('view')
+tm_shape(airbnb_private) +
+  tm_dots(alpha=0.4, 
+          size=0.05)
+tmap_mode('view')
+tm_shape(airbnb_entirehome) +
+  tm_dots(alpha=0.4, 
+          size=0.05)
+tmap_mode('view')
+tm_shape(airbnb_shared) +
+  tm_dots(alpha=0.4, 
+          size=0.05)
+```
+
+### Creating owin object 
+
+We will use the previous code that was created for the owin object. 
+
+``` {r echo=TRUE, eval=TRUE}
+mpsz_sf <- st_read(dsn = "data", 
+                layer = "MP14_SUBZONE_WEB_PL")
+
+mpsz_spatial <- as_Spatial(mpsz_sf)
+
+mpsz_sp <- as(mpsz_spatial, "SpatialPolygons")
+
+mpsz_owin <- as(mpsz_sp, "owin")
+
+plot(mpsz_owin)
+```
+
+## Combining point events object and owin object 
+
+We will use the following code to extract Private Rooms, Entire Homes/Apt and Shared Rooms events that are located within Singapore. 
+
+``` {r echo=TRUE, eval=TRUE}
+airbnb_privateSG_ppp = airbnb_private_ppp[mpsz_owin]
+airbnb_entirehomeSG_ppp = airbnb_entirehome_ppp[mpsz_owin]
+airbnb_sharedSG_ppp = airbnb_shared_ppp[mpsz_owin]
+```
+
+Now, we plot all the _ppp_ objects. 
+
+``` {r echo=TRUE, eval=TRUE}
+par(mfrow=c(2,2))
+plot(airbnb_privateSG_ppp)
+plot(airbnb_entirehomeSG_ppp)
+plot(airbnb_sharedSG_ppp)
+```
+
+## First-order Spatial POint Patterns Analysis on Covid-19
+
+As what we did previously, we will be using the following code to create the kernel density map. 
+
+__Private Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+kde_privateSG_bw <- density(airbnb_privateSG_ppp,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(kde_privateSG_bw)
+```
+
+As we can see from the plot above, the output range is too small for us to make any analysis. We will need to convert the unit of measure from meter to kilometer. 
+
+``` {r echo=FALSE, eval=TRUE}
+privateSG_ppp.km <- rescale(airbnb_privateSG_ppp, 1000, "km")
+```
+
+Now, we will be able to re-run the code and plot the KDE map. 
+
+``` {r echo=TRUE, eval=TRUE}
+kde_privateSG.bw <- density(privateSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_privateSG.bw, main = "Private Rooms bw.ppl")
+```
+
+In order to plot the kernel density maps on the OpenStreetMap, we need to convert the kernel density map into a grid object which will then be converted into a raster object. 
+
+``` {r echo=TRUE, eval=TRUE}
+grid_kde_privateSG.bw <- as.SpatialGridDataFrame.im(kde_privateSG_bw)
+raster_kde_privateSG.bw <- raster(grid_kde_privateSG.bw)
+```
+
+Let's check if the coordinate projection has been input. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_privateSG.bw)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_privateSG.bw) = "+init=EPSG:3414"
+crs(raster_kde_privateSG.bw)
+```
+
+Now that the raster object has its projection, we can finally plot the kernel density map. 
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+  tm_shape(raster_kde_privateSG.bw) +
+  tm_raster(alpha=0.6,
+            "v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE) +
+  tm_basemap("OpenStreetMap")
+```
+
+__Entire Homes/Apt__
+
+``` {r echo=TRUE, eval=TRUE}
+kde_entireSG_bw <- density(airbnb_entirehomeSG_ppp,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(kde_entireSG_bw)
+```
+
+As we can see from the plot above, the output range is too small for us to make any analysis. We will need to convert the unit of measure from meter to kilometer. 
+
+``` {r echo=FALSE, eval=TRUE}
+entireSG_ppp.km <- rescale(airbnb_entirehomeSG_ppp, 1000, "km")
+```
+
+Now, we will be able to re-run the code and plot the KDE map. 
+
+``` {r echo=TRUE, eval=TRUE}
+kde_entireSG.bw <- density(entireSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_entireSG.bw, main = "Entire Homes/Apt bw.ppl")
+```
+
+In order to plot the kernel density maps on the OpenStreetMap, we need to convert the kernel density map into a grid object which will then be converted into a raster object. 
+
+``` {r echo=TRUE, eval=TRUE}
+grid_kde_entireSG.bw <- as.SpatialGridDataFrame.im(kde_entireSG_bw)
+raster_kde_entireSG.bw <- raster(grid_kde_entireSG.bw)
+```
+
+Let's check if the coordinate projection has been input. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_entireSG.bw)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_entireSG.bw) = "+init=EPSG:3414"
+crs(raster_kde_entireSG.bw)
+```
+
+Now that the raster object has its projection, we can finally plot the kernel density map. 
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+  tm_shape(raster_kde_entireSG.bw) +
+  tm_raster(alpha=0.6,
+            "v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE) +
+  tm_basemap("OpenStreetMap")
+```
+
+__Shared Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+kde_sharedSG_bw <- density(airbnb_sharedSG_ppp,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(kde_sharedSG_bw)
+```
+
+As we can see from the plot above, the output range is too small for us to make any analysis. We will need to convert the unit of measure from meter to kilometer. 
+
+``` {r echo=FALSE, eval=TRUE}
+sharedSG_ppp.km <- rescale(airbnb_sharedSG_ppp, 1000, "km")
+```
+
+Now, we will be able to re-run the code and plot the KDE map. 
+
+``` {r echo=TRUE, eval=TRUE}
+kde_sharedSG.bw <- density(sharedSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_sharedSG.bw, main = "Shared Rooms bw.ppl")
+```
+
+In order to plot the kernel density maps on the OpenStreetMap, we need to convert the kernel density map into a grid object which will then be converted into a raster object. 
+
+``` {r echo=TRUE, eval=TRUE}
+grid_kde_sharedSG.bw <- as.SpatialGridDataFrame.im(kde_sharedSG_bw)
+raster_kde_sharedSG.bw <- raster(grid_kde_sharedSG.bw)
+```
+
+Let's check if the coordinate projection has been input. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_sharedSG.bw)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_sharedSG.bw) = "+init=EPSG:3414"
+crs(raster_kde_sharedSG.bw)
+```
+
+Now that the raster object has its projection, we can finally plot the kernel density map. 
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+  tm_shape(raster_kde_sharedSG.bw) +
+  tm_raster(alpha=0.6,
+            "v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE) +
+  tm_basemap("OpenStreetMap")
+```
+
+
+
+## Nearest Neighbour Analysis
+
+As usual, after we have completed and plotted the kernel density maps, we will proceed with the Nearest Neighbour Analysis using the Clark and Evans test. Here are our test hypotheses: 
+
+Ho = The distribution of childcare services are randomly distributed.
+
+H1= The distribution of childcare services are not randomly distributed.
+
+The 95% confident interval will be used.
+
+__Private Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+clarkevans.test(airbnb_privateSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                nsim=99)
+```
+
+__Entire Homes/Apt__
+
+``` {r echo=TRUE, eval=TRUE}
+clarkevans.test(airbnb_entirehomeSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                nsim=99)
+```
+
+__Shared Rooms__
+
+``` {r echo=TRUE, eval=TRUE}
+clarkevans.test(airbnb_sharedSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                nsim=99)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
