@@ -14,7 +14,7 @@ output:
 ---
 
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, cache=TRUE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
@@ -529,6 +529,37 @@ mrtSG_ppp.km <- rescale(mrtSG_ppp, 1000, "km")
 
 kde_mrtSG.bw <- density(mrtSG_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
 plot(kde_mrtSG.bw, main = "MRT Stations bw.ppl")
+```
+
+Converting to grid before converting to raster. 
+
+``` {r echo=TRUE, eval=TRUE}
+grid_kde_mrtSG.bw <- as.SpatialGridDataFrame.im(kde_mrt_bw)
+raster_kde_mrtSG.bw <- raster(grid_kde_mrtSG.bw)
+```
+
+Checking CRS projection. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_mrtSG.bw)
+```
+
+Setting the CRS projection. 
+
+``` {r echo=TRUE, eval=TRUE}
+crs(raster_kde_mrtSG.bw) = "+init=EPSG:3414"
+crs(raster_kde_mrtSG.bw)
+```
+
+Plotting the Hotels Kernel Density Map. 
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+  tm_shape(raster_kde_mrtSG.bw) +
+  tm_raster(alpha=0.6,
+            "v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE) +
+  tm_basemap("OpenStreetMap")
 ```
 
 Now that the First Order Analysis has been completed, we can move on to the Second Order Spatial Point Patterns Analysis. However, we would need to analyze the spatial points using G-Function before we can do so. In order to do that, we must first conduct the Nearest Neighbour Analysis
@@ -1122,13 +1153,90 @@ clarkevans.test(airbnb_sharedSG_ppp,
                 nsim=99)
 ```
 
+## Second-Order Spatial Point Patterns Analysis 
 
+Similar to what we did in the previous Second-Order Spatial Point Patterns Analysis, we will be using the _G Function_ to analyse the data. 
 
+__Private Rooms__
 
+We will use the following code chunk to compute the G-function using _Gest()_. 
 
+``` {r echo=TRUE, eval=TRUE}
+G_private = Gest(airbnb_privateSG_ppp, correction = "border")
+plot(G_private, xlim=c(0,500))
+```
 
+Our hypothesis: 
 
+Ho = The distribution of Private Rooms in Singapore are randomly distributed.
 
+H1= The distribution of Private Rooms in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+Now that our hypothesis has been created, we can conduct the Monte Carlo test with the G-function. 
+
+``` {r echo=TRUE, eval=TRUE}
+G_private.csr <- envelope(airbnb_privateSG_ppp, Gest, nsim = 999)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(G_private.csr)
+```
+
+__Entire Homes/Apt__
+
+We will use the following code chunk to compute the G-function using _Gest()_. 
+
+``` {r echo=TRUE, eval=TRUE}
+G_entirehome = Gest(airbnb_entirehomeSG_ppp, correction = "border")
+plot(G_entirehome, xlim=c(0,500))
+```
+
+Our hypothesis: 
+
+Ho = The distribution of Entire Homes/Apt in Singapore are randomly distributed.
+
+H1= The distribution of Entire Homes/Apt in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+Now that our hypothesis has been created, we can conduct the Monte Carlo test with the G-function. 
+
+``` {r echo=TRUE, eval=TRUE}
+G_entirehome.csr <- envelope(airbnb_entirehomeSG_ppp, Gest, nsim = 999)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(G_entirehome.csr)
+```
+
+__Shared Rooms__
+
+We will use the following code chunk to compute the G-function using _Gest()_. 
+
+``` {r echo=TRUE, eval=TRUE}
+G_shared = Gest(airbnb_sharedSG_ppp, correction = "border")
+plot(G_shared, xlim=c(0,500))
+```
+
+Our hypothesis: 
+
+Ho = The distribution of Shared Rooms in Singapore are randomly distributed.
+
+H1= The distribution of Shared Rooms in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+Now that our hypothesis has been created, we can conduct the Monte Carlo test with the G-function. 
+
+``` {r echo=TRUE, eval=TRUE}
+G_shared.csr <- envelope(airbnb_sharedSG_ppp, Gest, nsim = 999)
+```
+
+``` {r echo=TRUE, eval=TRUE}
+plot(G_shared.csr)
+```
 
 
 
