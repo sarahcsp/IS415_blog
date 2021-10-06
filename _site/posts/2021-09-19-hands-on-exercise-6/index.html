@@ -86,7 +86,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </style>
 
   <!--radix_placeholder_meta_tags-->
-<title>IS415 blog: Hands on Exercise 6</title>
+<title>Sarah's IS415 blog: Hands on Exercise 6</title>
 
 <meta property="description" itemprop="description" content="In this Hands on exercise, we learn more about how we can derive spatial weights by using functions provided by the spdep package. This exercise also helps us learn how to apply these spatial weights to compute spatially lagged values."/>
 
@@ -97,15 +97,15 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <meta name="article:author" content="Sarah Chin"/>
 
 <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
-<meta property="og:title" content="IS415 blog: Hands on Exercise 6"/>
+<meta property="og:title" content="Sarah&#39;s IS415 blog: Hands on Exercise 6"/>
 <meta property="og:type" content="article"/>
 <meta property="og:description" content="In this Hands on exercise, we learn more about how we can derive spatial weights by using functions provided by the spdep package. This exercise also helps us learn how to apply these spatial weights to compute spatially lagged values."/>
 <meta property="og:locale" content="en_US"/>
-<meta property="og:site_name" content="IS415 blog"/>
+<meta property="og:site_name" content="Sarah&#39;s IS415 blog"/>
 
 <!--  https://dev.twitter.com/cards/types/summary -->
 <meta property="twitter:card" content="summary"/>
-<meta property="twitter:title" content="IS415 blog: Hands on Exercise 6"/>
+<meta property="twitter:title" content="Sarah&#39;s IS415 blog: Hands on Exercise 6"/>
 <meta property="twitter:description" content="In this Hands on exercise, we learn more about how we can derive spatial weights by using functions provided by the spdep package. This exercise also helps us learn how to apply these spatial weights to compute spatially lagged values."/>
 
 <!--/radix_placeholder_meta_tags-->
@@ -117,7 +117,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["data/attribute/Dictionary.xlsx","data/attribute/Hunan_2012.csv","data/shapefile/Hunan.dbf","data/shapefile/Hunan.prj","data/shapefile/Hunan.qpj","data/shapefile/Hunan.shp","data/shapefile/Hunan.shx","hands-on-exercise-6_files/anchor-4.2.2/anchor.min.js","hands-on-exercise-6_files/bowser-1.9.3/bowser.min.js","hands-on-exercise-6_files/distill-2.2.21/template.v2.js","hands-on-exercise-6_files/figure-html5/unnamed-chunk-16-1.png","hands-on-exercise-6_files/figure-html5/unnamed-chunk-17-1.png","hands-on-exercise-6_files/figure-html5/unnamed-chunk-18-1.png","hands-on-exercise-6_files/figure-html5/unnamed-chunk-5-1.png","hands-on-exercise-6_files/header-attrs-2.10/header-attrs.js","hands-on-exercise-6_files/jquery-1.11.3/jquery.min.js","hands-on-exercise-6_files/popper-2.6.0/popper.min.js","hands-on-exercise-6_files/tippy-6.2.7/tippy-bundle.umd.min.js","hands-on-exercise-6_files/tippy-6.2.7/tippy-light-border.css","hands-on-exercise-6_files/tippy-6.2.7/tippy.css","hands-on-exercise-6_files/tippy-6.2.7/tippy.umd.min.js","hands-on-exercise-6_files/webcomponents-2.0.0/webcomponents.js"]}
+  {"type":"character","attributes":{},"value":["data/attribute/Dictionary.xlsx","data/attribute/Hunan_2012.csv","data/shapefile/Hunan.dbf","data/shapefile/Hunan.prj","data/shapefile/Hunan.qpj","data/shapefile/Hunan.shp","data/shapefile/Hunan.shx","hands-on-exercise-6_files/anchor-4.2.2/anchor.min.js","hands-on-exercise-6_files/bowser-1.9.3/bowser.min.js","hands-on-exercise-6_files/distill-2.2.21/template.v2.js","hands-on-exercise-6_files/figure-html5/unnamed-chunk-16-1.png","hands-on-exercise-6_files/figure-html5/unnamed-chunk-17-1.png","hands-on-exercise-6_files/figure-html5/unnamed-chunk-18-1.png","hands-on-exercise-6_files/figure-html5/unnamed-chunk-19-1.png","hands-on-exercise-6_files/figure-html5/unnamed-chunk-5-1.png","hands-on-exercise-6_files/header-attrs-2.10/header-attrs.js","hands-on-exercise-6_files/jquery-1.11.3/jquery.min.js","hands-on-exercise-6_files/popper-2.6.0/popper.min.js","hands-on-exercise-6_files/tippy-6.2.7/tippy-bundle.umd.min.js","hands-on-exercise-6_files/tippy-6.2.7/tippy-light-border.css","hands-on-exercise-6_files/tippy-6.2.7/tippy.css","hands-on-exercise-6_files/tippy-6.2.7/tippy.umd.min.js","hands-on-exercise-6_files/webcomponents-2.0.0/webcomponents.js"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
 <meta name="distill:offset" content="../.."/>
@@ -2070,7 +2070,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <header class="header header--fixed" role="banner">
 <nav class="distill-site-nav distill-site-header">
 <div class="nav-left">
-<a href="../../index.html" class="title">IS415 blog</a>
+<a href="../../index.html" class="title">Sarah's IS415 blog</a>
 <input id="distill-search" class="nav-search hidden" type="text" placeholder="Search..."/>
 </div>
 <div class="nav-right">
@@ -2164,6 +2164,9 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 <h2 id="computing-continguity-spatial-weights">Computing Continguity Spatial Weights</h2>
 <p>In this section, we will learn how to use <em>poly2nb()</em> of spdep package to compute contiguity weight matrices for the study area. This function builds a neighbours list based on regions with contiguous boundaries.</p>
+<ul>
+<li>Looking at the target’s neighbours.</li>
+</ul>
 <h3 id="computing-queen-continguity-based-neighbours">Computing (QUEEN) continguity based neighbours</h3>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -2210,6 +2213,16 @@ Link number distribution:
 </code></pre>
 </div>
 <pre><code>[1] &quot;Hanshou&quot; &quot;Jinshi&quot;  &quot;Li&quot;      &quot;Nan&quot;     &quot;Taoyuan&quot;</code></pre>
+</div>
+<p>Retrieving the neighbours’ GDPPC using this code chunk:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>nb1</span> <span class='op'>&lt;-</span> <span class='va'>wm_q</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span>
+<span class='va'>nb1</span> <span class='op'>&lt;-</span> <span class='va'>hunan</span><span class='op'>$</span><span class='va'>GDPPC</span><span class='op'>[</span><span class='va'>nb1</span><span class='op'>]</span>
+<span class='va'>nb1</span>
+</code></pre>
+</div>
+<pre><code>[1] 20981 34592 24473 21311 22879</code></pre>
 </div>
 <p>Compute weight matric by using <em>str()</em>.</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -2376,7 +2389,7 @@ Link number distribution:
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>wm_q</span>, <span class='va'>coords</span>, pch <span class='op'>=</span> <span class='fl'>19</span>, cex <span class='op'>=</span> <span class='fl'>0.6</span>, add <span class='op'>=</span> <span class='cn'>TRUE</span>, col<span class='op'>=</span> <span class='st'>"red"</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="hands-on-exercise-6_files/figure-html5/unnamed-chunk-16-1.png" width="624" /></p>
+<p><img src="hands-on-exercise-6_files/figure-html5/unnamed-chunk-17-1.png" width="624" /></p>
 </div>
 <h4 id="plotting-rook-contiguity-based-neighbours-maps">Plotting Rook contiguity based neighbours maps</h4>
 <div class="layout-chunk" data-layout="l-body">
@@ -2385,20 +2398,12 @@ Link number distribution:
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>wm_r</span>, <span class='va'>coords</span>, pch <span class='op'>=</span> <span class='fl'>19</span>, cex <span class='op'>=</span> <span class='fl'>0.6</span>, add <span class='op'>=</span> <span class='cn'>TRUE</span>, col <span class='op'>=</span> <span class='st'>"red"</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="hands-on-exercise-6_files/figure-html5/unnamed-chunk-17-1.png" width="624" /></p>
-</div>
-<div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span>mfrow<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>,<span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>hunan</span><span class='op'>$</span><span class='va'>geometry</span>, border<span class='op'>=</span><span class='st'>"lightgrey"</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>wm_q</span>, <span class='va'>coords</span>, pch <span class='op'>=</span> <span class='fl'>19</span>, cex <span class='op'>=</span> <span class='fl'>0.6</span>, add <span class='op'>=</span> <span class='cn'>TRUE</span>, col<span class='op'>=</span> <span class='st'>"red"</span>, main<span class='op'>=</span><span class='st'>"Queen Contiguity"</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>hunan</span><span class='op'>$</span><span class='va'>geometry</span>, border<span class='op'>=</span><span class='st'>"lightgrey"</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>wm_r</span>, <span class='va'>coords</span>, pch <span class='op'>=</span> <span class='fl'>19</span>, cex <span class='op'>=</span> <span class='fl'>0.6</span>, add <span class='op'>=</span> <span class='cn'>TRUE</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, main<span class='op'>=</span><span class='st'>"Rook Contiguity"</span><span class='op'>)</span>
-</code></pre>
-</div>
 <p><img src="hands-on-exercise-6_files/figure-html5/unnamed-chunk-18-1.png" width="624" /></p>
 </div>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="hands-on-exercise-6_files/figure-html5/unnamed-chunk-19-1.png" width="576" /></p>
+</div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
