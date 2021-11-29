@@ -1,0 +1,235 @@
+---
+title: "Take Home Assignment 3"
+description: |
+  In this Take Home Assignment, we will build hedonic pricing models to explain factors affecting the resale prices of public housing in Singapore. The hedonic price models must be built by using appropriate GWR methods. 
+author:
+  - name: Sarah Chin
+    url: linkedin.com/in/sarahchin99/
+date: 10-21-2021
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    toc_float: true
+---
+
+
+```{r setup, include=FALSE, cache=TRUE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# 1. Overview 
+
+Housing is an essential component of household wealth worldwide. Buying a housing have always been a major investment in people’s lives. The price of housing are affected by many factors. These factors can be further divided to structural and locational factors. We will be using the Hedonic pricing model to examine the effect of housing factors. In this assignment, we will be using Geographical Weighted Regression (GWR) to calibrate the hedonic price model for housing. 
+
+# 2. Installing and Loading the packages 
+
+Before we start importing our data, we would first need to prepare the environment. 
+
+``` {r echo=TRUE, eval=TRUE}
+packages = c('olsrr', 'corrplot', 'ggpubr', 'sf', 'spdep', 'GWmodel', 'tmap', 'tidyverse', 'httr')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+# 3. Importing the Geospatial and Aspatial data 
+
+## Importing Geospatial Data 
+
+We will be using _MP14_SUBZONE_WEB_PL_, which consists of URA Master Plan 2014’s planning subzone boundaries. Polygon features are used to represent these geographic boundaries. The GIS data is in svy21 projected coordinates systems.
+
+``` {r echo=TRUE, eval=TRUE}
+mpsz = st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL")
+```
+
+After importing the data, we will proceed to update its CRS information. The following code will update _mpsz_ to the correct ESPG code. 
+
+``` {r echo=TRUE, eval=TRUE}
+mpsz_svy21 <- st_transform(mpsz, 3414)
+```
+
+## Importing Aspatial Data
+
+For aspatial data, we will import the _resale-flat-prices-based-on-registration-date-from-jan-2017-onwards_ csv file since we will be focusing on 1st January 2019 to 30th September 2020. 
+
+``` {r echo=TRUE, eval=TRUE}
+flat_resale = read_csv("data/aspatial/resale-flat-prices/resale-flat-prices-based-on-registration-date-from-jan-2017-onwards.csv")
+```
+
+Since we will only be analysing Jan 2019 to Sep 2020 and four-room, we will remove the irrelevant rows. We will be using the following code to do so. 
+
+_Keeping only Jan 2019 to Sep 2020:_
+
+``` {r echo=TRUE, eval=TRUE}
+flat_resale <- flat_resale[flat_resale[["month"]] >= "2019-01",]
+flat_resale <- flat_resale[flat_resale[["month"]] <= "2020-09",]
+```
+
+_Keeping only 4 Room:_
+
+``` {r echo=TRUE, eval=TRUE}
+flat_resale <- flat_resale[flat_resale[["flat_type"]] == "4 ROOM",]
+```
+
+As we can see from the _flat_resale_ dataset, there are no coordinates available. This means that we must use the *OneMap API* in order to geocode our dataset and give them the correct coordinates. However, before we can geocode the dataset, we must concatenate _block_ and _street_name_ to get a unique address to geocode it more accurately. 
+
+``` {r echo=TRUE, eval=TRUE}
+flat_resale$address <- paste(flat_resale$block, flat_resale$street_name)
+```
+
+Now that we have established our addresses under the column, _address_ in the _flat_resale_ dataset, we can proceed to use the *OneMap API* to geocode our dataset. 
+
+``` {r echo=TRUE, eval=TRUE}
+getHTTPResponse <- function(blockNumber,streetName) {
+  basePath <- "https://developers.onemap.sg/commonapi/"
+  pathHead <- "search?searchVal="
+  pathTail <- "&returnGeom=Y&getAddrDetails=N"
+  addr <- paste(blockNumber,streetName)
+  addr <- gsub(" ", "+", addr, fixed = TRUE)
+  url <- paste(basePath, pathHead, addr , pathTail , sep="")
+  GET(url)
+}
+```
+
+``` {r echo=TRUE, eval=TRUE}
+flat_resale$lat <- NA
+flat_resale$lng <- NA
+
+for (i in 1:nrow(flat_resale)){
+  if(i %% 100 == 0)
+    print(paste("Obtained",i,"out of",nrow(flat_resale)))
+  data <- flat_resale[i,]
+  resp <- getHTTPResponse(data$block,data$"street_name")
+  result <- content(resp)
+
+  if(length(result$results)!=0){
+      resp <- result$results[[1]]
+      flat_resale[i,]$lat <- resp$LATITUDE
+      flat_resale[i,]$lng <- resp$LONGITUDE
+  }
+}
+```
+
+After importing the data, we need to check if there are any missing values in the *lat* and *lng* columns. 
+
+``` {r echo=TRUE, eval=TRUE}
+flat_resale <- flat_resale[!is.na(flat_resale$lat),]
+```
+
+Now that we have the *lat* and *lng* values have been added, we need to get the proximity of the apartments to the nearest facilities. In order to do so, we need to retrieve the data from the OneMap API.
+
+```{r echo=TRUE, eval=TRUE}
+
+```
+
+Now that our data has been cleaned, we can proceed to convert the aspatial data into a sf object. 
+
+``` {r echo=TRUE, eval=TRUE}
+flat_resale.sf <- st_as_sf(flat_resale,
+                            coords = c("lng", "lat"),
+                            crs=4326) %>%
+  st_transform(crs=3414)
+head(flat_resale.sf)
+```
+
+## Exploratory Data Analysis 
+
+We will look at 2 different types of factors: Structural and Locational. For Structural, we will be looking at *floor_area_sqm*, *storey_range*, *remaining_lease* and *flat_model*. For Locational, we will be looking at the proximity of the flats to childcare centres, MRT lines, CHAS centres, eldercare services and preschools. 
+
+Since we will be taking a look at these locational datasets. We will be importing as well. 
+
+``` {r echo=TRUE, eval=TRUE}
+childcare <- st_read(dsn = "data/locational/childcare", layer = "CHILDCARE")
+mrt <- st_read(dsn = "data/locational/mrt", layer = "MRTLRTStnPtt")
+CHAS <- read_rds("data/locational/chas/CHAS.rds")
+CHAS <- st_as_sf(CHAS, 
+                 coords = c("X_COORDINATE","Y_COORDINATE"), 
+                 crs = 3414)
+eldercare <- st_read(dsn = "data/locational/eldercare", layer = "ELDERCARE")
+preschools <- st_read("data/locational/preschools/pre-schools-location-kml.kml")
+```
+
+Before doing any proper analysis, we can plot histograms to have a clearer idea of the variables we will be looking at. We will use the following code to do so: 
+
+``` {r echo=TRUE, eval=TRUE}
+AREA_SQM <- ggplot(data=flat_resale.sf, aes(x= `floor_area_sqm`), stat='count') +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+STOREY_RANGE <- ggplot(data=flat_resale.sf, aes(x=storey_range)) +
+  geom_bar()
+
+LEASE <- ggplot(data=flat_resale.sf, aes(x= `remaining_lease`)) +
+  geom_bar()
+
+FLAT_MODEL <- ggplot(data=flat_resale.sf, aes(x= `flat_model`)) +
+  geom_bar()
+
+ggarrange(AREA_SQM, STOREY_RANGE, LEASE, FLAT_MODEL) + theme(axis.text.x = element_text(size = 6))
+```
+
+# 4. Hedonic Pricing Model 
+
+## Simple Linear Regression Model 
+
+We will first built a simple linear regression model using *_resale_price_* as the dependent variable and *_floor_area_sqm_* as the independent variable. 
+
+``` {r echo=TRUE, eval=TRUE}
+flat.slr <- lm(formula=resale_price ~ floor_area_sqm, data = flat_resale.sf)
+```
+
+We will now look at the summary. 
+
+``` {r echo=TRUE, eval=TRUE}
+summary(flat.slr)
+```
+
+To visualise the best fit curve on a scatterplot, we can incorporate lm() as a method function in ggplot’s geometry as shown in the code chunk below.
+
+``` {r echo=TRUE, eval=TRUE}
+ggplot(data=flat_resale.sf,  
+       aes(x=`floor_area_sqm`, y=`resale_price`)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+Since p-value is much bigger than 0.0001, we will reject the alternative hypothesis that mean is a good estimator of _resale_price_. This will allow us to infer that simple linear regression model above is not a good estimator of _resale_price_.
+
+## Multiple Linear Regression Model
+
+Since our dataset does not contain a lot of numerical data, such as proximity to different locations, we would have to derive the shortest distance of the HDB resale units to the different amenities. To do so, we first need to find the distance between the HDB points and the amenities point. 
+
+*_Childcare Centres_*
+
+``` {r echo=TRUE, eval=TRUE}
+
+```
+
+``` {r echo=TRUE, eval=TRUE}
+#corrplot(cor(flat_resale[, 5:13]), diag = FALSE, order = "AOE",
+#         tl.pos = "td", tl.cex = 0.5, method = "number", type = "upper")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
